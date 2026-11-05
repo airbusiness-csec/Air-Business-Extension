@@ -80,6 +80,7 @@ def split_row(row):
 def render(md):
     lines = md.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     out, i = [], 0
+    seen = {}  # Repeated headings get -1, -2, ... like GitHub, so ids stay unique.
     while i < len(lines):
         line = lines[i]
         if STOP_AT.match(line):
@@ -91,7 +92,12 @@ def render(md):
             i += 1
         elif m := re.match(r"^(#{1,6})\s+(.*)$", line):
             n = len(m[1])
-            out.append(f'<h{n} id="{esc(slugify(m[2]))}">{inline(m[2])}</h{n}>')
+            slug = slugify(m[2])
+            count = seen.get(slug, 0)
+            seen[slug] = count + 1
+            if count:
+                slug = f"{slug}-{count}"
+            out.append(f'<h{n} id="{esc(slug)}">{inline(m[2])}</h{n}>')
             i += 1
         elif line.startswith(">"):
             buf = []
