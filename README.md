@@ -10,6 +10,14 @@ It works in **Microsoft Edge** and **Google Chrome** on Windows and Mac.
 
 ---
 
+## On an Air Business computer? It's installed for you
+
+On company-managed computers, the extension is installed automatically in Microsoft Edge; you'll see the red **ab** button next to the address bar. You don't need to download or install anything; skip to [Using it](#using-it).
+
+The steps below are only for computers where it hasn't been installed automatically, or if your Air Business contact asks you to install it yourself.
+
+---
+
 ## Before you start
 
 **[Download the latest version (zip file)](https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/air-business-xslt-polyfill.zip)**
@@ -106,6 +114,7 @@ Air Business sites are built in and can't be removed.
 | The extension has disappeared | Check you haven't moved or deleted the extracted folder. If you have, put it back or install again using the steps above. |
 | Chrome shows a warning about developer mode extensions | This is normal for extensions installed this way. Choose to keep the extension enabled. |
 | The browser says the extension is corrupted or can't load | Delete the extension from the extensions page, extract a fresh copy of the zip file and install again. |
+| **Air Business XSLT Polyfill** is listed twice on the extensions page | You installed it yourself before it was installed automatically. Click **Remove** on the copy that has the Developer mode badge, and keep the one installed by your organisation. You may need to add any extra sites again. |
 
 ---
 
