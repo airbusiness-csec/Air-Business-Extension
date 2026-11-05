@@ -1,0 +1,49 @@
+# Publishes a GitHub release with the end-user zip when a version tag is pushed:
+#
+#   git tag v1.1.0 && git push origin v1.1.0
+#
+# The tag must match "version" in manifest.json. The zip is attached under a
+# fixed name so this link always downloads the newest release:
+#   https://github.com/<owner>/<repo>/releases/latest/download/air-business-xslt-polyfill.zip
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write # Needed to create the release; nothing else.
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to a commit for supply-chain safety (actions/checkout v4.2.2).
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Check tag matches manifest version
+        run: |
+          v=$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")
+          if [ "v$v" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match manifest.json version $v"
+            exit 1
+          fi
+
+      - name: Build release zip
+        run: python3 -I scripts/build_release.py
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          cp "releases/air-business-xslt-polyfill-$v.zip" air-business-xslt-polyfill.zip
+          sha256sum air-business-xslt-polyfill.zip > air-business-xslt-polyfill.zip.sha256
+          gh release create "$GITHUB_REF_NAME" \
+            air-business-xslt-polyfill.zip \
+            air-business-xslt-polyfill.zip.sha256 \
+            --title "Air Business XSLT Polyfill $v" \
+            --notes "Download **air-business-xslt-polyfill.zip** below. Installation steps and what's new are in README.html inside the zip."

@@ -1,0 +1,4 @@
+# Keep line endings identical on Windows and in GitHub Actions, so the
+# release build's "is xslt-extension.js up to date?" check gives the same answer.
+* text=auto eol=lf
+*.png binary

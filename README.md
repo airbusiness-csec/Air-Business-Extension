@@ -109,13 +109,26 @@ Air Business sites are built in and can't be removed.
 
 ---
 
-## Updating to a new version
+## Releases
 
-1. Extract the new zip file and replace the contents of your existing extension folder with it.
+You can check which version you have by clicking the red **ab** button in your toolbar; it's shown under **About**.
+
+New versions are supplied by your Air Business contact as a zip file named like `air-business-xslt-polyfill-1.1.0.zip`, where the numbers are the version.
+
+### Updating to a new version
+
+1. Extract the new zip file and replace the contents of your existing extension folder with it. Keep the folder in the same place.
 2. Go to `edge://extensions` or `chrome://extensions`.
 3. Click **Reload** (the circular arrow) on **Air Business XSLT Polyfill**.
+4. Click the red **ab** button and check the version under **About** matches the new one.
 
-You can check which version you have by clicking the extension's icon; it's shown under **About**.
+Sites you've added are kept when you update.
+
+### Version history
+
+| Version | What's new |
+| --- | --- |
+| 1.1.0 | First Air Business release. Works automatically on Air Business sites; **Add this domain** button for other sites; **Help** button; Air Business icon. |
 
 ---
 
@@ -132,19 +145,3 @@ For anything else, please contact your Air Business contact.
 Made by Sam Tilling.
 
 Based on the open-source [XSLT Polyfill](https://github.com/mfreed7/xslt_polyfill) by Mason Freed, used under the BSD 3-Clause licence (see `LICENSE`).
-
----
-
-## For developers
-
-The content script, `xslt-extension.js`, is generated from `content.js` and `xslt-polyfill.min.js`. After changing either file, run `node scripts/bundle.mjs`.
-
-| File | Purpose |
-| --- | --- |
-| `manifest.json` | Extension settings, including the built-in domains |
-| `background.js` | Turns the polyfill on for the domains users have added |
-| `scope.js` | Domain-matching code shared by the background script and popup |
-| `popup.html`, `popup.js`, `popup.css` | The toolbar popup |
-| `README.html` | The end-user guide, opened by the popup's Help button. Generated from this README (everything above "For developers"); run `python scripts/build_readme_html.py` after changing `README.md` |
-
-When packaging for release, include `manifest.json`, `background.js`, `scope.js`, `popup.html`, `popup.js`, `popup.css`, `xslt-extension.js`, `LICENSE`, `README.html`, this `README.md`, the `icons` folder and the `docs` folder (README images).
