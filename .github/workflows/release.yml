@@ -3,9 +3,21 @@
 # current version, it builds the zip, creates tag v<version> and publishes.
 # Pushes that don't change the version do nothing.
 #
-# The zip is attached under a fixed name so this link always downloads the
-# newest release:
+# Each release gets:
+#   air-business-xslt-polyfill.zip  - manual install (README "Download" link)
+#   air-business-xslt-polyfill.crx  - signed package Edge installs on managed devices
+#   updates.xml                     - tells Edge the latest version and where the .crx is
+#   air-business-xslt-polyfill.intunewin    - Intune Win32 app package (intune/ scripts)
+#   air-business-xslt-polyfill-Detect.ps1   - its Intune detection script
+#   SHA256SUMS                      - checksums of all of the above
+#
+# Fixed names mean these links always point at the newest release:
 #   https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/air-business-xslt-polyfill.zip
+#   https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/updates.xml
+#   https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/air-business-xslt-polyfill.intunewin
+#
+# Needs a "release" environment (Settings > Environments) holding the
+# CRX_PRIVATE_KEY secret. See intune/DEPLOYMENT.md.
 
 name: Release
 
@@ -23,8 +35,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
+  # Decides whether there's anything to release. Needs no secrets.
+  check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      publish: ${{ steps.version.outputs.publish }}
     steps:
       # Pinned to a commit for supply-chain safety (actions/checkout v4.2.2).
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -46,22 +64,129 @@ jobs:
             echo "publish=true" >> "$GITHUB_OUTPUT"
           fi
 
+  # Packages the intune/ scripts as an Intune Win32 app (.intunewin). Microsoft's
+  # packaging tool only runs on Windows. Needs no secrets.
+  intune:
+    needs: check
+    if: needs.check.outputs.publish == 'true'
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      # Pinned to a commit for supply-chain safety (actions/checkout v4.2.2).
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      # Microsoft Win32 Content Prep Tool v1.8.7, pinned to its release commit.
+      # Refuses to run it unless both the SHA-256 and Microsoft's Authenticode
+      # signature match. To upgrade: update the commit and hash together.
+      - name: Download and verify Microsoft Win32 Content Prep Tool
+        shell: pwsh
+        run: |
+          $url = 'https://raw.githubusercontent.com/microsoft/Microsoft-Win32-Content-Prep-Tool/1d6cfcbdf8c28edc596337031f74df951f38f718/IntuneWinAppUtil.exe'
+          $expected = 'c1ba45b5cb939e84af064bb7ff4b38fb3dfe33c8dc1078fd9b157672eae671f6'
+          $exe = Join-Path $env:RUNNER_TEMP 'IntuneWinAppUtil.exe'
+          Invoke-WebRequest -Uri $url -OutFile $exe -UseBasicParsing
+          $actual = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "IntuneWinAppUtil.exe hash mismatch: got $actual, expected $expected" }
+          $sig = Get-AuthenticodeSignature $exe
+          if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notlike 'CN=Microsoft Corporation,*') {
+            throw "IntuneWinAppUtil.exe signature check failed: $($sig.Status) $($sig.SignerCertificate.Subject)"
+          }
+          Write-Output "Verified IntuneWinAppUtil.exe ($actual), signed by $($sig.SignerCertificate.Subject)"
+
+      - name: Build .intunewin
+        shell: pwsh
+        run: |
+          if (Select-String -Path intune\*.ps1 -Pattern '__EXTENSION_ID__' -SimpleMatch -Quiet) {
+            throw 'The extension ID has not been set in the intune scripts.'
+          }
+          $out = Join-Path $env:RUNNER_TEMP 'intune-out'
+          & (Join-Path $env:RUNNER_TEMP 'IntuneWinAppUtil.exe') -c intune -s Install.ps1 -o $out -q
+          if ($LASTEXITCODE) { throw "IntuneWinAppUtil.exe failed with exit code $LASTEXITCODE" }
+          New-Item -ItemType Directory -Force intune-package | Out-Null
+          Copy-Item (Join-Path $out 'Install.intunewin') intune-package\air-business-xslt-polyfill.intunewin
+          Copy-Item intune\Detect.ps1 intune-package\air-business-xslt-polyfill-Detect.ps1
+
+      # Pinned to a commit (actions/upload-artifact v7.0.2).
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: intune-package
+          path: intune-package/
+          if-no-files-found: error
+          retention-days: 1
+
+  # Builds, signs and publishes. Runs in the "release" environment, which holds
+  # the signing key; give that environment required reviewers so nothing is
+  # signed and pushed to managed devices without approval.
+  release:
+    needs: [check, intune]
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      # Pinned to a commit for supply-chain safety (actions/checkout v4.2.2).
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      # Pinned to a commit (actions/download-artifact v8.0.2).
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: intune-package
+          path: intune-package
+
       - name: Build release zip
-        if: steps.version.outputs.publish == 'true'
         run: python3 -I scripts/build_release.py
 
+      - name: Sign CRX and write updates.xml
+        env:
+          CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          if [ -z "$CRX_PRIVATE_KEY" ]; then
+            echo "::error::The CRX_PRIVATE_KEY secret isn't set in the release environment."
+            exit 1
+          fi
+          umask 077
+          key="$RUNNER_TEMP/crx-key.pem"
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$CRX_PRIVATE_KEY" > "$key"
+          python3 -I scripts/pack_crx.py \
+            --key "$key" \
+            --zip "releases/air-business-xslt-polyfill-$VERSION.zip" \
+            --crx air-business-xslt-polyfill.crx \
+            --updates-xml updates.xml \
+            --version "$VERSION" \
+            --codebase "https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/air-business-xslt-polyfill.crx"
+
       - name: Publish GitHub release
-        if: steps.version.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.check.outputs.version }}
         run: |
           cp "releases/air-business-xslt-polyfill-$VERSION.zip" air-business-xslt-polyfill.zip
-          sha256sum air-business-xslt-polyfill.zip > air-business-xslt-polyfill.zip.sha256
+          cp intune-package/air-business-xslt-polyfill.intunewin intune-package/air-business-xslt-polyfill-Detect.ps1 .
+          sha256sum air-business-xslt-polyfill.zip air-business-xslt-polyfill.crx \
+            air-business-xslt-polyfill.intunewin air-business-xslt-polyfill-Detect.ps1 > SHA256SUMS
+          cat > notes.md <<'EOF'
+          **Managed devices update automatically**; nothing to do.
+
+          **Manual install:** download `air-business-xslt-polyfill.zip`. Installation steps are in `README.html` inside the zip.
+
+          **Intune (IT only):** `air-business-xslt-polyfill.intunewin` is the Win32 app package and `air-business-xslt-polyfill-Detect.ps1` its detection script. Setup steps are in [intune/DEPLOYMENT.md](https://github.com/airbusiness-csec/Air-Business-Extension/blob/main/intune/DEPLOYMENT.md). You only need to re-upload them to Intune if this release changed the scripts in `intune/`; extension updates reach devices on their own.
+
+          Verify downloads against `SHA256SUMS`.
+          EOF
           gh release create "v$VERSION" \
             air-business-xslt-polyfill.zip \
-            air-business-xslt-polyfill.zip.sha256 \
+            air-business-xslt-polyfill.crx \
+            updates.xml \
+            air-business-xslt-polyfill.intunewin \
+            air-business-xslt-polyfill-Detect.ps1 \
+            SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "Air Business XSLT Polyfill $VERSION" \
-            --notes "Download **air-business-xslt-polyfill.zip** below. Installation steps and what's new are in README.html inside the zip."
+            --notes-file notes.md
