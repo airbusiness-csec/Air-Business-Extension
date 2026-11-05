@@ -1,19 +1,26 @@
-# Publishes a GitHub release with the end-user zip when a version tag is pushed:
+# Publishes a GitHub release automatically whenever "version" in manifest.json
+# changes on main. No manual tagging needed: if there's no release yet for the
+# current version, it builds the zip, creates tag v<version> and publishes.
+# Pushes that don't change the version do nothing.
 #
-#   git tag v1.1.0 && git push origin v1.1.0
-#
-# The tag must match "version" in manifest.json. The zip is attached under a
-# fixed name so this link always downloads the newest release:
-#   https://github.com/<owner>/<repo>/releases/latest/download/air-business-xslt-polyfill.zip
+# The zip is attached under a fixed name so this link always downloads the
+# newest release:
+#   https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/air-business-xslt-polyfill.zip
 
 name: Release
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+  workflow_dispatch: # Also allows a manual run from the Actions tab.
 
 permissions:
-  contents: write # Needed to create the release; nothing else.
+  contents: write # Needed to create the tag and release; nothing else.
+
+# Never run two releases at once.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -24,26 +31,37 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check tag matches manifest version
-        run: |
-          v=$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")
-          if [ "v$v" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME doesn't match manifest.json version $v"
-            exit 1
-          fi
-
-      - name: Build release zip
-        run: python3 -I scripts/build_release.py
-
-      - name: Publish GitHub release
+      - name: Read version and check for an existing release
+        id: version
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          v="${GITHUB_REF_NAME#v}"
-          cp "releases/air-business-xslt-polyfill-$v.zip" air-business-xslt-polyfill.zip
+          v=$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          if gh release view "v$v" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release v$v already exists; nothing to do."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "No release for v$v yet; publishing."
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build release zip
+        if: steps.version.outputs.publish == 'true'
+        run: python3 -I scripts/build_release.py
+
+      - name: Publish GitHub release
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cp "releases/air-business-xslt-polyfill-$VERSION.zip" air-business-xslt-polyfill.zip
           sha256sum air-business-xslt-polyfill.zip > air-business-xslt-polyfill.zip.sha256
-          gh release create "$GITHUB_REF_NAME" \
+          gh release create "v$VERSION" \
             air-business-xslt-polyfill.zip \
             air-business-xslt-polyfill.zip.sha256 \
-            --title "Air Business XSLT Polyfill $v" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Air Business XSLT Polyfill $VERSION" \
             --notes "Download **air-business-xslt-polyfill.zip** below. Installation steps and what's new are in README.html inside the zip."

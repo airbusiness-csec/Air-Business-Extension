@@ -12,7 +12,7 @@ It works in **Microsoft Edge** and **Google Chrome** on Windows and Mac.
 
 ## Before you start
 
-You'll need the extension folder, usually supplied as a zip file by your Air Business contact.
+**[Download the latest version (zip file)](https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/air-business-xslt-polyfill.zip)**
 
 1. Save the zip file somewhere permanent, such as your **Documents** folder.
 2. Right-click the zip file and choose **Extract All…**, then **Extract**.
@@ -113,22 +113,16 @@ Air Business sites are built in and can't be removed.
 
 You can check which version you have by clicking the red **ab** button in your toolbar; it's shown under **About**.
 
-New versions are supplied by your Air Business contact as a zip file named like `air-business-xslt-polyfill-1.1.0.zip`, where the numbers are the version.
+The download link always gives you the newest version. You can also see every version, and what changed in each, on the [releases page](https://github.com/airbusiness-csec/Air-Business-Extension/releases).
 
 ### Updating to a new version
 
-1. Extract the new zip file and replace the contents of your existing extension folder with it. Keep the folder in the same place.
+1. [Download the latest version](https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/air-business-xslt-polyfill.zip), extract it, and replace the contents of your existing extension folder with it. Keep the folder in the same place.
 2. Go to `edge://extensions` or `chrome://extensions`.
 3. Click **Reload** (the circular arrow) on **Air Business XSLT Polyfill**.
 4. Click the red **ab** button and check the version under **About** matches the new one.
 
 Sites you've added are kept when you update.
-
-### Version history
-
-| Version | What's new |
-| --- | --- |
-| 1.1.0 | First Air Business release. Works automatically on Air Business sites; **Add this domain** button for other sites; **Help** button; Air Business icon. |
 
 ---
 
