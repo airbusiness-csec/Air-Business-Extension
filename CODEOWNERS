@@ -1,0 +1,5 @@
+# Code owners: Sam Tilling and csec@airbusiness.com.
+# Format: <file pattern> <owner> <owner> ... (owners are space-separated).
+# Email owners must be verified emails on GitHub accounts with write access;
+# a GitHub team (e.g. @org/team-name) can be used instead of a shared mailbox.
+* sam.tilling@airbusiness.com csec@airbusiness.com

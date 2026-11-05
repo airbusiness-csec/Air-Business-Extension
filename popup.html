@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <title>Air Business XSLT Polyfill</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="scope.js" defer></script>
+  <script src="popup.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Air Business XSLT Polyfill</h1>
+    <button type="button" id="help" title="Open the help guide in a new tab">Help</button>
+  </header>
+
+  <section>
+    <p class="host" id="host">&nbsp;</p>
+    <p class="state" id="state" role="status"></p>
+    <button type="button" id="toggle" disabled>Add this domain</button>
+  </section>
+
+  <section>
+    <h2>Built-in domains</h2>
+    <ul id="builtin"></ul>
+  </section>
+
+  <section>
+    <h2>Domains you’ve added</h2>
+    <ul id="sites"></ul>
+    <p class="empty" id="empty" hidden>None yet.</p>
+  </section>
+
+  <p class="error" id="error" role="alert" hidden></p>
+
+  <footer>
+    <h2>About</h2>
+    <p>Made by Sam Tilling. <span id="version"></span></p>
+    <p>For support, please contact your Air Business contact.</p>
+    <p class="credit">Based on XSLT Polyfill by Mason Freed (BSD 3-Clause licence).</p>
+  </footer>
+</body>
+</html>

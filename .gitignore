@@ -1,0 +1,14 @@
+# Extension signing keys: anyone with this key can publish updates as this
+# extension. Never commit; keep it in a password vault.
+*.pem
+
+# Packaged builds: attach to a release instead of committing.
+*.crx
+*.zip
+
+# Personal editor settings (contain machine-specific paths)
+.vscode/
+
+# Python bytecode from scripts/
+__pycache__/
+*.pyc
