@@ -1,13 +1,5 @@
-<#
-  Intune Win32 app: install Air Business XSLT Polyfill.
-
-  Adds the extension to Microsoft Edge's force-install policy list
-  (HKLM\SOFTWARE\Policies\Microsoft\Edge\ExtensionInstallForcelist). Edge then
-  downloads it from GitHub Releases and keeps it updated itself.
-
-  Only this extension's own entry is ever added or changed; other entries in
-  the list are left alone. Safe to run more than once. Runs as SYSTEM.
-#>
+# Adds the extension to Edge's force-install list and Edge does the rest.
+# Leaves other extensions' entries alone. Fine to run more than once.
 
 $ErrorActionPreference = 'Stop'
 
@@ -28,8 +20,7 @@ if ($ExtensionId -notmatch '^[a-p]{32}$') {
     exit 1
 }
 
-# Always use the 64-bit registry view, which is the one Edge reads, even if
-# Intune launches a 32-bit PowerShell.
+# 64-bit view, in case Intune runs this as 32-bit PowerShell.
 $hklm = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Registry64')
 $key = $null
 try {

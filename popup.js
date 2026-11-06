@@ -1,11 +1,10 @@
-// Toolbar popup: add or remove the current tab's domain, and list enabled ones.
-// All page-derived text is written with textContent, never innerHTML.
-// SITE_PATTERN, builtInPatterns, patternMatchesUrl, userAddedSites: scope.js.
+// Anything that comes from the page goes in via textContent, never innerHTML.
+// Helpers like userAddedSites() live in scope.js.
 
 const $ = (id) => document.getElementById(id);
 
 let tab = null;
-let pattern = null; // e.g. "https://intranet.example.com/*"
+let pattern = null;
 let enabled = false;
 
 function patternFor(url) {
@@ -106,14 +105,14 @@ $('toggle').addEventListener('click', async () => {
   }
   showError('');
   try {
-    // Must be the first await, so the browser still sees the user's click.
+    // Has to be the first await or it no longer counts as a user click.
     const granted = await chrome.permissions.request({ origins: [pattern] });
     if (!granted) {
       await render();
       return;
     }
     await syncRegistration();
-    // The polyfill runs at document_start, so reload to apply it now.
+    // Reload so the script runs on this page.
     await chrome.tabs.reload(tab.id);
     window.close();
   } catch (error) {
