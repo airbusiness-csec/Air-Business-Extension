@@ -1,14 +1,8 @@
-"""Generates README.html (the end-user guide) from README.md.
-
-Run after changing README.md:
+"""Turns README.md into README.html (the Help page).
 
     python scripts/build_readme_html.py
 
-Handles the small Markdown subset README.md uses: headings, paragraphs,
-lists, block quotes, tables, rules, bold, italic, code, links and images.
-All text is HTML-escaped. Links may only be #anchors or http(s); images may
-only be relative paths inside the extension. The "For developers" section and
-everything after it is left out, as it isn't meant for end users.
+Only supports the bits of Markdown the README uses. No code blocks.
 """
 
 import html
@@ -21,7 +15,7 @@ OUT = ROOT / "README.html"
 
 STOP_AT = re.compile(r"^##\s+For developers\s*$", re.I)
 BLOCK_START = re.compile(r"^(#{1,6}\s|>|\||---\s*$|-\s|\d+\.\s)")
-# `code` | ![alt](src) | [text](href) | **bold** | *italic (may contain **bold**)*
+# code, image, link, bold, italic
 INLINE = re.compile(
     r"`([^`]+)`|!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)"
     r"|\*\*(.+?)\*\*|\*((?:\*\*.+?\*\*|[^*])+)\*"
@@ -63,11 +57,11 @@ def link(label, href):
         return f'<a href="{esc(href)}">{inline(label)}</a>'
     if re.match(r"^https?://", href, re.I):
         return f'<a href="{esc(href)}" target="_blank" rel="noopener noreferrer">{inline(label)}</a>'
-    return inline(label)  # Unsupported link: show the text only.
+    return inline(label)  # anything else, just show the text
 
 
 def image(alt, src):
-    # Packaged, relative images only: no schemes, no absolute or parent paths.
+    # local images inside the extension only
     if re.match(r"^[a-z][a-z0-9+.-]*:", src, re.I) or src.startswith(("/", "\\")) or ".." in src:
         return ""
     return f'<img src="{esc(src)}" alt="{esc(alt)}" loading="lazy">'
@@ -80,6 +74,7 @@ def split_row(row):
 def render(md):
     lines = md.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     out, i = [], 0
+    seen = {}  # duplicate headings get -1, -2 like on GitHub
     while i < len(lines):
         line = lines[i]
         if STOP_AT.match(line):
@@ -91,7 +86,12 @@ def render(md):
             i += 1
         elif m := re.match(r"^(#{1,6})\s+(.*)$", line):
             n = len(m[1])
-            out.append(f'<h{n} id="{esc(slugify(m[2]))}">{inline(m[2])}</h{n}>')
+            slug = slugify(m[2])
+            count = seen.get(slug, 0)
+            seen[slug] = count + 1
+            if count:
+                slug = f"{slug}-{count}"
+            out.append(f'<h{n} id="{esc(slug)}">{inline(m[2])}</h{n}>')
             i += 1
         elif line.startswith(">"):
             buf = []
@@ -172,7 +172,7 @@ th { background: var(--soft); }
 
 def main():
     body = render(SRC.read_text(encoding="utf-8"))
-    # Put the logo beside the main title.
+    # logo next to the title
     body = re.sub(
         r"^<h1 ([^>]*)>(.*?)</h1>",
         r'<div class="brand"><img src="icons/icon-128.png" alt=""><h1 \1>\2</h1></div>',

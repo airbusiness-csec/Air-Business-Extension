@@ -1,19 +1,15 @@
-// Shared by background.js (via importScripts) and popup.js.
-//
-// Built-in scope: the content_scripts "matches" in manifest.json. Those sites
-// always get the polyfill and can't be removed from the popup. Anything else
-// the user adds with the popup button is tracked as an optional host
-// permission and registered dynamically by background.js.
+// Used by background.js and popup.js.
+// Built-in sites come from content_scripts in manifest.json. Anything else is an
+// optional host permission the user granted from the popup.
 
-// Plain http(s) site patterns, e.g. "https://intranet.example.com/*".
+// e.g. "https://intranet.example.com/*"
 const SITE_PATTERN = /^https?:\/\/[^/]+\/\*$/;
 
 function builtInPatterns() {
   return (chrome.runtime.getManifest().content_scripts || []).flatMap((cs) => cs.matches || []);
 }
 
-// Minimal match-pattern check for "scheme://host/*" patterns, where scheme may
-// be "*" (http or https) and host may start with "*." (domain + subdomains).
+// Only handles "scheme://host/*" patterns, which is all we use.
 function patternMatchesUrl(pattern, url) {
   const m = /^(\*|https?):\/\/([^/]+)\/\*$/.exec(pattern);
   if (!m) return false;
@@ -35,8 +31,7 @@ function patternMatchesUrl(pattern, url) {
   return u.hostname === host;
 }
 
-// Sites the user added with the button (excludes built-in scope, so the
-// polyfill is never injected twice).
+// Skips the built-in sites so the script isn't injected twice.
 async function userAddedSites() {
   const builtIn = new Set(builtInPatterns());
   const { origins = [] } = await chrome.permissions.getAll();

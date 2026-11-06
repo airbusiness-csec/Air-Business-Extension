@@ -43,66 +43,79 @@ th { background: var(--soft); }
 <body>
 <main>
 <div class="brand"><img src="icons/icon-128.png" alt=""><h1 id="air-business-xslt-polyfill">Air Business XSLT Polyfill</h1></div>
-<p>Some Air Business systems display pages built from XML. Newer versions of Microsoft Edge and Google Chrome no longer display these pages properly; you may see raw code or a blank page instead.</p>
-<p>This extension fixes that. Once installed, those pages display as normal.</p>
-<p>Air Business sites work straight away. If you need it on another site, you can add that site yourself at any time by clicking the extension&#x27;s red <strong>ab</strong> button in your browser toolbar (see <a href="#adding-another-site">Adding another site</a>).</p>
-<p>It works in <strong>Microsoft Edge</strong> and <strong>Google Chrome</strong> on Windows and Mac.</p>
+<p>Air Business XSLT Polyfill is a browser extension for Microsoft Edge and Google Chrome. It keeps Air Business web systems that use XML and XSLT displaying correctly as browsers withdraw built-in support for that technology.</p>
+<p>This guide explains why the extension is needed, the two ways to install it, and how to use it.</p>
 <hr>
-<h2 id="on-an-air-business-computer-its-installed-for-you">On an Air Business computer? It&#x27;s installed for you</h2>
-<p>On company-managed computers, the extension is installed automatically in Microsoft Edge; you&#x27;ll see the red <strong>ab</strong> button next to the address bar. You don&#x27;t need to download or install anything; skip to <a href="#using-it">Using it</a>.</p>
-<p>The steps below are only for computers where it hasn&#x27;t been installed automatically, or if your Air Business contact asks you to install it yourself.</p>
+<h2 id="why-is-this-needed">Why is this needed?</h2>
+<p>Some Air Business systems deliver pages as XML documents, which the browser converts into a readable page using an XSLT stylesheet. Browsers have done this conversion themselves for many years.</p>
+<p>Google and Microsoft are removing XSLT support from Chrome and Edge. Microsoft lists the change on its <a href="https://learn.microsoft.com/microsoft-edge/web-platform/site-impacting-changes?tabs=latest" target="_blank" rel="noopener noreferrer">site-impacting changes page</a>. Once it has been removed, affected pages show raw code or a blank screen instead of their normal content. Until then, Edge shows a red warning banner at the top of these pages.</p>
+<p>This extension restores the conversion inside the browser, so affected pages continue to display exactly as before. No changes are needed to the Air Business systems themselves.</p>
 <hr>
-<h2 id="before-you-start">Before you start</h2>
+<h2 id="choosing-an-installation-method">Choosing an installation method</h2>
+<p>There are two ways to install the extension. Most organisations should use Option A.</p>
+<div class="table"><table><thead><tr><th></th><th>Option A: Managed deployment (Microsoft Intune)</th><th>Option B: Manual installation (browser add-on)</th></tr></thead><tbody><tr><td><strong>Best for</strong></td><td>Organisations with Intune-managed Windows devices</td><td>Individual users, or devices not managed by Intune</td></tr><tr><td><strong>Who installs it</strong></td><td>Your IT administrator, once, for all users</td><td>Each user, on their own computer</td></tr><tr><td><strong>Browsers</strong></td><td>Microsoft Edge</td><td>Microsoft Edge or Google Chrome</td></tr><tr><td><strong>Operating systems</strong></td><td>Windows 10 and 11</td><td>Windows or macOS</td></tr><tr><td><strong>Updates</strong></td><td>Automatic</td><td>Manual, by downloading each new version</td></tr><tr><td><strong>User action needed</strong></td><td>None</td><td>About five minutes per computer</td></tr><tr><td><strong>Requirements</strong></td><td>Microsoft Intune; devices enrolled in Intune</td><td>Browser &quot;Developer mode&quot; must be allowed on the device</td></tr></tbody></table></div>
+<hr>
+<h2 id="option-a-managed-deployment-with-microsoft-intune">Option A: Managed deployment with Microsoft Intune</h2>
+<p><em>For IT administrators.</em></p>
+<p>The extension is distributed as a Win32 app for Microsoft Intune. The app adds the extension to Microsoft Edge&#x27;s managed-extension policy. Edge then installs the signed extension directly from this project&#x27;s official releases and keeps it up to date automatically. Users don&#x27;t need to do anything, and they can&#x27;t remove or disable the extension.</p>
+<h3 id="what-you-need">What you need</h3>
+<ul><li>Microsoft Intune, with permission to add and assign Windows apps.</li><li>Windows 10 (1809 or later) or Windows 11 devices enrolled in Intune.</li><li>Microsoft Edge on those devices.</li></ul>
+<h3 id="steps">Steps</h3>
+<ol><li>From the <a href="https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest" target="_blank" rel="noopener noreferrer">latest release</a>, download <code>air-business-xslt-polyfill.intunewin</code>, <code>air-business-xslt-polyfill-Detect.ps1</code> and <code>SHA256SUMS</code>.</li><li>Check the downloads against <code>SHA256SUMS</code>. In PowerShell, run <code>Get-FileHash &lt;file&gt; -Algorithm SHA256</code> for each file and compare the result with the matching line. Don&#x27;t continue if they differ.</li><li>In the Intune admin centre, go to <strong>Apps → Windows → Add → Windows app (Win32)</strong> and upload <code>air-business-xslt-polyfill.intunewin</code>.</li><li>Set the install command to <code>powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1</code>, the uninstall command to <code>powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Uninstall.ps1</code>, and the install behaviour to <strong>System</strong>.</li><li>Under <strong>Detection rules</strong>, choose <strong>Use a custom detection script</strong>, upload <code>air-business-xslt-polyfill-Detect.ps1</code>, and set <strong>Run script as 32-bit process on 64-bit clients</strong> to <strong>No</strong>.</li><li>Assign the app as <strong>Required</strong> to a small pilot group, confirm it works, then assign it to all users who need it.</li></ol>
+<p>The <a href="https://github.com/airbusiness-csec/Air-Business-Extension/blob/main/intune/DEPLOYMENT.md" target="_blank" rel="noopener noreferrer">full deployment guide</a> covers every setting, verification on a test device, optional settings such as pinning the button to the toolbar, and removal.</p>
+<blockquote><p><strong>Already managing Edge extensions through Intune or Group Policy?</strong> If you already use the <em>Control which extensions are installed silently</em> policy, add <code>mmnheljcggbgjibghjangafmlajjnnag;https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/updates.xml</code> to your existing policy instead of deploying the Win32 app. This avoids two policies overwriting each other.</p></blockquote>
+<h3 id="updates">Updates</h3>
+<p>New versions are installed automatically. Edge checks for updates every few hours. You only need to upload a new Intune package if a release&#x27;s notes say the deployment scripts have changed.</p>
+<hr>
+<h2 id="option-b-manual-installation">Option B: Manual installation</h2>
+<p><em>For individual users.</em></p>
+<h3 id="before-you-start">Before you start</h3>
 <p><strong><a href="https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/air-business-xslt-polyfill.zip" target="_blank" rel="noopener noreferrer">Download the latest version (zip file)</a></strong></p>
-<ol><li>Save the zip file somewhere permanent, such as your <strong>Documents</strong> folder.</li><li>Right-click the zip file and choose <strong>Extract All…</strong>, then <strong>Extract</strong>.</li><li>Leave the extracted folder where it is. <strong>Don&#x27;t move, rename or delete it later</strong>; the browser loads the extension from that folder every time it starts.</li></ol>
+<ol><li>Save the zip file somewhere permanent, such as your <strong>Documents</strong> folder.</li><li>Right-click the zip file and choose <strong>Extract All…</strong>, then <strong>Extract</strong>.</li><li>Leave the extracted folder where it is. The browser loads the extension from this folder each time it starts, so <strong>don&#x27;t move, rename or delete it</strong>.</li></ol>
 <blockquote><p><strong>If your Documents folder is in OneDrive:</strong> right-click the extracted folder and choose <strong>Always keep on this device</strong>. Otherwise the extension may stop working when OneDrive frees up space.</p></blockquote>
-<hr>
-<h2 id="installing">Installing</h2>
 <h3 id="microsoft-edge">Microsoft Edge</h3>
-<ol><li>Open Edge and type <code>edge://extensions</code> into the address bar, then press <strong>Enter</strong>.</li><li>Turn on <strong>Developer mode</strong> (switch near the bottom of the left-hand panel; on a narrow window, open the menu at the top left first).</li><li>Click <strong>Load unpacked</strong> (top right, under <strong>Installed extensions</strong>).</li><li>Select the extracted folder (the one containing <code>manifest.json</code>) and click <strong>Select Folder</strong>.</li><li><strong>Air Business XSLT Polyfill</strong> now appears in your list of extensions.</li></ol>
-<p><img src="docs/edge-developer-mode.png" alt="The Edge extensions page, with the Developer mode switch circled in red at the bottom of the left-hand panel, the Load unpacked button at the top right, and Air Business XSLT Polyfill 1.1.0 listed and switched on" loading="lazy"></p>
-<p><em>The Edge extensions page after installing: <strong>Developer mode</strong> is circled in red, <strong>Load unpacked</strong> is at the top right, and <strong>Air Business XSLT Polyfill</strong> is listed and switched on.</em></p>
+<ol><li>Type <code>edge://extensions</code> into the address bar and press <strong>Enter</strong>.</li><li>Turn on <strong>Developer mode</strong>. The switch is near the bottom of the left-hand panel; in a narrow window, open the menu at the top left first.</li><li>Click <strong>Load unpacked</strong>, at the top right under <strong>Installed extensions</strong>.</li><li>Select the extracted folder (the one containing <code>manifest.json</code>) and click <strong>Select Folder</strong>.</li><li><strong>Air Business XSLT Polyfill</strong> now appears in your list of extensions.</li></ol>
+<p><img src="docs/edge-developer-mode.png" alt="The Edge extensions page, with the Developer mode switch circled in red at the bottom of the left-hand panel, the Load unpacked button at the top right, and Air Business XSLT Polyfill listed and switched on" loading="lazy"></p>
+<p><em>The Edge extensions page after installation: <strong>Developer mode</strong> is circled in red, <strong>Load unpacked</strong> is at the top right, and <strong>Air Business XSLT Polyfill</strong> is listed and switched on.</em></p>
 <h3 id="google-chrome">Google Chrome</h3>
-<ol><li>Open Chrome and type <code>chrome://extensions</code> into the address bar, then press <strong>Enter</strong>.</li><li>Turn on <strong>Developer mode</strong> (switch at the top right).</li><li>Click <strong>Load unpacked</strong>.</li><li>Select the extracted folder (the one containing <code>manifest.json</code>) and click <strong>Select Folder</strong>.</li><li><strong>Air Business XSLT Polyfill</strong> now appears in your list of extensions.</li></ol>
-<h3 id="pin-it-to-your-toolbar">Pin it to your toolbar</h3>
-<ol><li>Click the <strong>Extensions</strong> button (the jigsaw-piece icon) next to the address bar.</li><li>Click the pin (Chrome) or eye (Edge) icon next to <strong>Air Business XSLT Polyfill</strong>.</li></ol>
-<p>The extension&#x27;s red <strong>ab</strong> button now sits in your toolbar, next to the address bar. Click it whenever you want to check which sites it&#x27;s working on or add a new one. To open this guide at any time, click the <strong>Help</strong> button at the top of the pop-up.</p>
-<blockquote><p><strong>Can&#x27;t see Developer mode or Load unpacked?</strong> Your computer&#x27;s settings may block it. Please contact your Air Business contact.</p></blockquote>
+<ol><li>Type <code>chrome://extensions</code> into the address bar and press <strong>Enter</strong>.</li><li>Turn on <strong>Developer mode</strong> (the switch at the top right).</li><li>Click <strong>Load unpacked</strong>.</li><li>Select the extracted folder (the one containing <code>manifest.json</code>) and click <strong>Select Folder</strong>.</li><li><strong>Air Business XSLT Polyfill</strong> now appears in your list of extensions.</li></ol>
+<h3 id="pin-the-extension-to-your-toolbar">Pin the extension to your toolbar</h3>
+<ol><li>Click the <strong>Extensions</strong> button (the jigsaw-piece icon) next to the address bar.</li><li>Click the pin icon (Chrome) or eye icon (Edge) next to <strong>Air Business XSLT Polyfill</strong>.</li></ol>
+<p>The red <strong>ab</strong> button now appears next to the address bar.</p>
+<blockquote><p><strong>Can&#x27;t find Developer mode or Load unpacked?</strong> Your organisation may have disabled them. Ask your IT team about deploying the extension using Option A.</p></blockquote>
+<h3 id="updates-1">Updates</h3>
+<ol><li><a href="https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/air-business-xslt-polyfill.zip" target="_blank" rel="noopener noreferrer">Download the latest version</a> and extract it.</li><li>Replace the contents of your existing extension folder with the new files, keeping the folder in the same place.</li><li>Go to <code>edge://extensions</code> or <code>chrome://extensions</code> and click <strong>Reload</strong> (the circular arrow) on <strong>Air Business XSLT Polyfill</strong>.</li><li>Click the red <strong>ab</strong> button and check the version shown under <strong>About</strong>.</li></ol>
+<p>Any sites you&#x27;ve added are kept when you update.</p>
 <hr>
-<h2 id="using-it">Using it</h2>
-<h3 id="air-business-sites-work-automatically">Air Business sites work automatically</h3>
-<p>There&#x27;s nothing to do for these sites:</p>
-<ul><li><code>airbusiness.com</code> and all its sub-sites</li><li><code>onadvantagecs.com</code> and all its sub-sites</li></ul>
-<p>If you click the red <strong>ab</strong> button while on one of these sites, it shows <strong>Included by default</strong>:</p>
+<h2 id="using-the-extension">Using the extension</h2>
+<h3 id="air-business-sites">Air Business sites</h3>
+<p>The extension works automatically on:</p>
+<ul><li><code>airbusiness.com</code> and all its subdomains</li><li><code>onadvantagecs.com</code> and all its subdomains</li></ul>
+<p>No setup is needed. Clicking the red <strong>ab</strong> button on one of these sites shows <strong>Included by default</strong>:</p>
 <p><img src="docs/popup.png" alt="The extension&#x27;s pop-up on www.airbusiness.com, showing &quot;Included by default in this extension&quot;, the list of built-in domains, an empty &quot;Domains you&#x27;ve added&quot; list and the About section" loading="lazy"></p>
 <h3 id="adding-another-site">Adding another site</h3>
-<p>You can add any other site yourself, straight from the extension button in your toolbar. If a page isn&#x27;t displaying properly on a site that isn&#x27;t listed above:</p>
-<ol><li>Go to that page.</li><li>Click the red <strong>ab</strong> button in your browser toolbar, next to the address bar. (If you can&#x27;t see it, click the jigsaw-piece <strong>Extensions</strong> button first.)</li><li>Click <strong>Add this domain</strong>.</li><li>Your browser asks for permission. Click <strong>Allow</strong>.</li></ol>
-<p>The page reloads and should now display correctly. The extension remembers the site from then on.</p>
+<p>If a page on another site shows raw code or a blank screen, you can enable the extension for that site:</p>
+<ol><li>Go to the affected page.</li><li>Click the red <strong>ab</strong> button next to the address bar. If it isn&#x27;t visible, click the jigsaw-piece <strong>Extensions</strong> button first.</li><li>Click <strong>Add this domain</strong>.</li><li>When your browser asks for permission, click <strong>Allow</strong>.</li></ol>
+<p>The page reloads and displays correctly. The extension remembers the site from then on.</p>
 <h3 id="removing-a-site">Removing a site</h3>
-<p>Click the red <strong>ab</strong> button in your toolbar, then either:</p>
-<ul><li>click <strong>Remove this domain</strong> while you&#x27;re on that site, or</li><li>click <strong>Remove</strong> next to the site under <strong>Domains you&#x27;ve added</strong>.</li></ul>
-<p>Air Business sites are built in and can&#x27;t be removed.</p>
+<p>Click the red <strong>ab</strong> button, then either click <strong>Remove this domain</strong> while on that site, or click <strong>Remove</strong> next to the site under <strong>Domains you&#x27;ve added</strong>. The built-in Air Business sites can&#x27;t be removed.</p>
+<h3 id="help">Help</h3>
+<p>Click <strong>Help</strong> at the top of the extension&#x27;s pop-up to open this guide at any time.</p>
 <hr>
-<h2 id="your-privacy">Your privacy</h2>
-<ul><li>The extension only works on Air Business sites and any sites you choose to add.</li><li>It only changes pages that are XML documents; normal web pages are left alone.</li><li>It doesn&#x27;t collect, store or send any of your information anywhere. Everything happens inside your browser.</li></ul>
+<h2 id="privacy-and-security">Privacy and security</h2>
+<ul><li><strong>Limited reach:</strong> the extension only runs on the Air Business sites listed above and on sites you choose to add. Each added site requires your explicit permission.</li><li><strong>XML pages only:</strong> normal web pages are left untouched.</li><li><strong>No data collection:</strong> the extension doesn&#x27;t collect, store or transmit any personal or browsing information. All processing happens locally in your browser.</li><li><strong>Same-site only:</strong> when converting a page, the extension only loads files from that page&#x27;s own website.</li><li><strong>Signed and verifiable:</strong> managed installations are cryptographically signed, so Edge only accepts official releases. Every release publishes SHA-256 checksums so downloads can be verified.</li><li><strong>Reviewed releases:</strong> every change is reviewed before release, and each release requires approval before it&#x27;s published.</li></ul>
 <hr>
 <h2 id="troubleshooting">Troubleshooting</h2>
-<div class="table"><table><thead><tr><th>Problem</th><th>What to try</th></tr></thead><tbody><tr><td>A page still shows raw code or a blank page</td><td>Click the extension&#x27;s icon and check the site is listed. If not, click <strong>Add this domain</strong>. Then refresh the page.</td></tr><tr><td>The extension has disappeared</td><td>Check you haven&#x27;t moved or deleted the extracted folder. If you have, put it back or install again using the steps above.</td></tr><tr><td>Chrome shows a warning about developer mode extensions</td><td>This is normal for extensions installed this way. Choose to keep the extension enabled.</td></tr><tr><td>The browser says the extension is corrupted or can&#x27;t load</td><td>Delete the extension from the extensions page, extract a fresh copy of the zip file and install again.</td></tr><tr><td><strong>Air Business XSLT Polyfill</strong> is listed twice on the extensions page</td><td>You installed it yourself before it was installed automatically. Click <strong>Remove</strong> on the copy that has the Developer mode badge, and keep the one installed by your organisation. You may need to add any extra sites again.</td></tr></tbody></table></div>
+<div class="table"><table><thead><tr><th>Problem</th><th>What to try</th></tr></thead><tbody><tr><td>A page still shows raw code or a blank screen</td><td>Click the red <strong>ab</strong> button and check the site is listed. If it isn&#x27;t, click <strong>Add this domain</strong>, then refresh the page.</td></tr><tr><td>The extension isn&#x27;t installed after an Intune deployment</td><td>Check the device has synced with Intune, then fully close and reopen Edge. Administrators can confirm the policy at <code>edge://policy</code>.</td></tr><tr><td>The extension has disappeared (manual installation)</td><td>Check the extracted folder hasn&#x27;t been moved or deleted. If it has, restore it or install again.</td></tr><tr><td>Chrome warns about developer mode extensions</td><td>This is expected for manual installations. Choose to keep the extension enabled.</td></tr><tr><td>The browser says the extension is corrupted or can&#x27;t be loaded</td><td>Remove the extension from the extensions page, extract a fresh copy of the zip file and install it again.</td></tr><tr><td><strong>Air Business XSLT Polyfill</strong> appears twice on the extensions page</td><td>It was installed manually before your organisation deployed it. Remove the copy marked as a developer-mode extension, and keep the one installed by your organisation. You may need to add any extra sites again.</td></tr></tbody></table></div>
 <hr>
-<h2 id="releases">Releases</h2>
-<p>You can check which version you have by clicking the red <strong>ab</strong> button in your toolbar; it&#x27;s shown under <strong>About</strong>.</p>
-<p>The download link always gives you the newest version. You can also see every version, and what changed in each, on the <a href="https://github.com/airbusiness-csec/Air-Business-Extension/releases" target="_blank" rel="noopener noreferrer">releases page</a>.</p>
-<h3 id="updating-to-a-new-version">Updating to a new version</h3>
-<ol><li><a href="https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/air-business-xslt-polyfill.zip" target="_blank" rel="noopener noreferrer">Download the latest version</a>, extract it, and replace the contents of your existing extension folder with it. Keep the folder in the same place.</li><li>Go to <code>edge://extensions</code> or <code>chrome://extensions</code>.</li><li>Click <strong>Reload</strong> (the circular arrow) on <strong>Air Business XSLT Polyfill</strong>.</li><li>Click the red <strong>ab</strong> button and check the version under <strong>About</strong> matches the new one.</li></ol>
-<p>Sites you&#x27;ve added are kept when you update.</p>
+<h2 id="versions-and-releases">Versions and releases</h2>
+<p>Your installed version is shown under <strong>About</strong> in the extension&#x27;s pop-up. All versions, with details of what changed in each, are listed on the <a href="https://github.com/airbusiness-csec/Air-Business-Extension/releases" target="_blank" rel="noopener noreferrer">releases page</a>.</p>
 <hr>
 <h2 id="support">Support</h2>
-<p>You can reopen this guide at any time from the <strong>Help</strong> button in the extension&#x27;s pop-up.</p>
-<p>For anything else, please contact your Air Business contact.</p>
+<p>For help with the extension or with any Air Business system, please contact your Air Business account contact.</p>
 <hr>
-<h2 id="credits">Credits</h2>
-<p>Made by Sam Tilling.</p>
+<h2 id="licence-and-acknowledgements">Licence and acknowledgements</h2>
+<p>Developed by Sam Tilling at Air Business.</p>
 <p>Based on the open-source <a href="https://github.com/mfreed7/xslt_polyfill" target="_blank" rel="noopener noreferrer">XSLT Polyfill</a> by Mason Freed, used under the BSD 3-Clause licence (see <code>LICENSE</code>).</p>
 </main>
 </body>

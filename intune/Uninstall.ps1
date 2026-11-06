@@ -1,10 +1,5 @@
-<#
-  Intune Win32 app: uninstall Air Business XSLT Polyfill.
-
-  Removes this extension's entry from Edge's force-install policy list. Edge
-  then removes the extension. Other entries in the list are left alone.
-  Runs as SYSTEM.
-#>
+# Removes our entry from Edge's force-install list, so Edge uninstalls it.
+# Other extensions' entries are left alone.
 
 $ErrorActionPreference = 'Stop'
 

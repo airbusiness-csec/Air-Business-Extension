@@ -1,9 +1,5 @@
-<#
-  Intune Win32 app: detection rule for Air Business XSLT Polyfill.
-
-  Upload this as a custom detection script. Reports "installed" (output and
-  exit 0) only when Edge's force-install list contains this exact entry.
-#>
+# Intune detection script. Counts as installed if our entry is in Edge's
+# force-install list.
 
 $ExtensionId = 'mmnheljcggbgjibghjangafmlajjnnag'
 $UpdateUrl   = 'https://github.com/airbusiness-csec/Air-Business-Extension/releases/latest/download/updates.xml'
