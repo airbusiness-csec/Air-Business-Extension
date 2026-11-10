@@ -7,10 +7,11 @@ Not shipped to end users. The end-user guide is `README.md` (generated into `REA
 | File | Purpose |
 | --- | --- |
 | `manifest.json` | Extension settings, including the built-in domains (`content_scripts` → `matches`) and the version |
-| `background.js` | Registers the polyfill on the domains users have added |
+| `background.js` | Registers `detect.js` on the domains users have added, and injects the polyfill when `detect.js` asks |
+| `detect.js` | Tiny content script on every in-scope page. Asks `background.js` to inject the polyfill only for XML documents in browsers without native XSLT, so HTML pages never load it |
 | `scope.js` | Domain-matching code shared by the background script and popup |
 | `popup.html`, `popup.js`, `popup.css` | The toolbar popup |
-| `xslt-extension.js` | The content script. Generated from `content.js` + `xslt-polyfill.min.js` by `node scripts/bundle.mjs` |
+| `xslt-extension.js` | The polyfill, injected on demand by `background.js`. Generated from `content.js` + `xslt-polyfill.min.js` by `node scripts/bundle.mjs` |
 | `README.md` → `README.html` | End-user guide, opened by the popup's Help button. `python scripts/build_readme_html.py` |
 | `scripts/build_release.py` | Builds the release zip into `releases/` |
 | `scripts/pack_crx.py` | Signs the release zip as a `.crx` and writes `updates.xml` (used by the release workflow) |

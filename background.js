@@ -20,10 +20,9 @@ async function doSync() {
       {
         id: SCRIPT_ID,
         matches,
-        js: ['xslt-extension.js'],
+        js: ['detect.js'],
         runAt: 'document_start',
         allFrames: true,
-        world: 'MAIN',
         persistAcrossSessions: true,
       },
     ]);
@@ -42,11 +41,36 @@ chrome.runtime.onStartup.addListener(() => sync());
 chrome.permissions.onAdded.addListener(() => sync());
 chrome.permissions.onRemoved.addListener(() => sync());
 
-// The popup asks for a sync and waits, so it can reload the tab afterwards.
+// detect.js found an XML document without native XSLT support: inject the
+// polyfill into that frame only. Targeting the document (not just the frame)
+// means nothing is injected if the frame has navigated away in the meantime.
+// executeScript only succeeds where the extension has host permission, i.e.
+// the built-in domains and the sites the user has added.
+function injectPolyfill(sender) {
+  if (!sender.tab) return;
+  const target = sender.documentId
+    ? { tabId: sender.tab.id, documentIds: [sender.documentId] }
+    : { tabId: sender.tab.id, frameIds: [sender.frameId] };
+  chrome.scripting
+    .executeScript({
+      target,
+      files: ['xslt-extension.js'],
+      world: 'MAIN',
+      injectImmediately: true,
+    })
+    .catch((error) => console.warn('Could not inject the XSLT polyfill:', error));
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (sender.id !== chrome.runtime.id || message?.type !== 'sync') {
+  if (sender.id !== chrome.runtime.id) return false;
+
+  if (message?.type === 'inject') {
+    injectPolyfill(sender);
     return false;
   }
+
+  // The popup asks for a sync and waits, so it can reload the tab afterwards.
+  if (message?.type !== 'sync') return false;
   sync().then(
     () => sendResponse({ ok: true }),
     (error) => sendResponse({ ok: false, error: String(error) }),

@@ -15,6 +15,10 @@
     "scripting",
     "activeTab"
   ],
+  "host_permissions": [
+    "https://*.airbusiness.com/*",
+    "https://*.onadvantagecs.com/*"
+  ],
   "optional_host_permissions": [
     "http://*/*",
     "https://*/*"
@@ -26,11 +30,10 @@
         "https://*.onadvantagecs.com/*"
       ],
       "js": [
-        "xslt-extension.js"
+        "detect.js"
       ],
       "run_at": "document_start",
-      "all_frames": true,
-      "world": "MAIN"
+      "all_frames": true
     }
   ],
   "background": {

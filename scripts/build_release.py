@@ -28,6 +28,7 @@ RELEASES = ROOT / "releases"
 RELEASE_FILES = [
     "manifest.json",
     "background.js",
+    "detect.js",
     "scope.js",
     "popup.html",
     "popup.js",
