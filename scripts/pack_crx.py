@@ -1,20 +1,11 @@
-"""Signs the release zip as a CRX3 package and writes the Edge/Chrome update manifest.
+"""Signs the release zip as a .crx and writes updates.xml. Needs openssl.
 
-Uses only the Python standard library and the `openssl` command (built into
-GitHub's Ubuntu runners and Git for Windows), so no third-party packages.
-
-    # Print the extension ID for a signing key (the ID never changes for a key):
     python scripts/pack_crx.py --key key.pem --print-id
-
-    # Sign a zip and write updates.xml (done by the release workflow):
     python scripts/pack_crx.py --key key.pem --zip in.zip --crx out.crx \
         --updates-xml updates.xml --version 1.2.0 --codebase https://.../out.crx
-
-    # Check a .crx's structure and signature:
     python scripts/pack_crx.py --verify out.crx
 
-The private key is only ever passed to openssl by file path; it is never read,
-printed or logged by this script.
+The key only ever goes to openssl as a path; this script never reads it.
 """
 
 import argparse
@@ -48,11 +39,11 @@ def crx_id_bytes(pub_der):
 
 
 def extension_id(pub_der):
-    # Hex digits 0-f of the first 16 bytes of SHA-256(public key) mapped to a-p.
+    # first 16 bytes of the key hash, hex 0-f written as a-p
     return "".join(chr(ord("a") + int(c, 16)) for c in crx_id_bytes(pub_der).hex())
 
 
-# --- Minimal protobuf encoding/decoding (only what CRX3 headers need) --------
+# Just enough protobuf for the CRX3 header.
 
 def varint(n):
     out = bytearray()
@@ -65,7 +56,7 @@ def varint(n):
 
 
 def field(number, payload):
-    # Length-delimited field (wire type 2).
+    # wire type 2 (length-delimited)
     return varint((number << 3) | 2) + varint(len(payload)) + payload
 
 
@@ -91,8 +82,6 @@ def read_varint(buf, i):
             return n, i
         shift += 7
 
-
-# --- CRX3 --------------------------------------------------------------------
 
 def sign(key_path, zip_bytes, pub_der):
     signed_data = field(1, crx_id_bytes(pub_der))  # SignedData { crx_id }

@@ -1,8 +1,7 @@
-// Keeps the polyfill content script registered on exactly the extra sites the
-// user has granted via the popup (the built-in scope in manifest.json is
-// handled statically). The browser's granted host permissions are the single
-// source of truth, so revoking a site in the browser's own extension settings
-// also stops the polyfill running there.
+// Registers detect.js on any extra sites added from the popup, and injects the
+// polyfill when detect.js finds an XML page. The granted host permissions are
+// the source of truth, so removing a site from the browser's extension
+// settings works too.
 
 importScripts('scope.js');
 
@@ -29,7 +28,7 @@ async function doSync() {
   }
 }
 
-// Serialise syncs so concurrent triggers can't race on the script ID.
+// One sync at a time, otherwise register/unregister can clash.
 let queue = Promise.resolve();
 function sync() {
   queue = queue.then(doSync, doSync);
@@ -69,11 +68,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false;
   }
 
-  // The popup asks for a sync and waits, so it can reload the tab afterwards.
+  // The popup waits on this before reloading the tab.
   if (message?.type !== 'sync') return false;
   sync().then(
     () => sendResponse({ ok: true }),
     (error) => sendResponse({ ok: false, error: String(error) }),
   );
-  return true; // Respond asynchronously.
+  return true; // async response
 });

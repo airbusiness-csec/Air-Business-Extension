@@ -1,6 +1,5 @@
-// Generates xslt-extension.js, the extension's content script: content.js and
-// xslt-polyfill.min.js wrapped in one function, so neither adds globals to the
-// page. Run `node scripts/bundle.mjs` after changing either file.
+// Builds xslt-extension.js from content.js + xslt-polyfill.min.js, wrapped so
+// nothing leaks into the page's globals. Rerun after changing either.
 import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
